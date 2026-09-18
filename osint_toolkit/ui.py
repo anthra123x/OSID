@@ -65,7 +65,7 @@ def tool_card(t: dict) -> None:
     if t["takes_input"]:
         print(c("cyan", "  ▸ EJEMPLO:") + f'  {c("bold", t["example"])}')
     print(c("cyan", "  ▸ COMANDO:"),
-          f'  {c("dim", t["runner"].format(input=t["example"]))}')
+          f'  {c("dim", t["runner"].replace("{input}", t["example"]).replace("{out}", "…"))}')
     print()
 
 
@@ -95,6 +95,7 @@ def color_category(cat: str) -> str:
         "🌐": "domain",
         "🕸️": "web",
         "🖼️": "photo",
+        "🔍": "magenta",
         "🧰": "web",
     }.get(cid, "cyan")
     return c(theme, cat)

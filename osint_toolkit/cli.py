@@ -150,6 +150,22 @@ def run_tool(t: dict, cfg: dict, value: str | None = None) -> None:
         inputs = [""]
 
     for each in inputs:
+        # Herramientas interactivas (TUI / servidores web) heredan la
+        # terminal directamente: no se guarda salida, solo el comando.
+        if t.get("interactive"):
+            args_it = shlex.split(t["runner"].replace("{input}", each))
+            print(c("dim", f"\n  $ {' '.join(args_it)}"))
+            print(c("cyan", "─" * 64))
+            try:
+                code = subprocess.run(args_it, env=child_env(cfg)).returncode
+            except KeyboardInterrupt:
+                code = 130
+            print(c("cyan", "─" * 64))
+            record_history(t, each, "ok" if code == 0 else f"salida {code}", "interactivo")
+            print(c("ok", "  📄 Sesión interactiva finalizada."))
+            pause()
+            return
+
         stamp = datetime.now().strftime("%H%M%S-%f")[:-3]
         date_dir = datetime.now().strftime("%Y-%m-%d")
         run_dir = RESULTS_ROOT / date_dir / f"{t['name']}-{stamp}"

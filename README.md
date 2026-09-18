@@ -23,7 +23,11 @@ uso y reportes guardados automáticamente.
 | 🕸️ Sitios | WhatWeb | Detecta CMS, servidor, framework y plugins de un sitio |
 | 🖼️ Metadatos | ExifTool | Metadatos EXIF de imágenes (cámara, fecha, GPS si están presentes) |
 | 🖼️ Metadatos | Metagoofil | Descarga documentos públicos de un dominio y extrae sus metadatos |
+| 🔍 Frameworks | SpiderFoot | Motor OSINT automatizado: cientos de módulos y correlaciones cruzadas |
+| 🔍 Frameworks | Sn0int | Framework OSINT semi-automatizado con TUI (IPs, dominios, personas, fotos) |
+| 🔍 Frameworks | GHunt | OSINT de cuentas Google a partir de un email (perfil, avatar, actividad) |
 | 🧰 Panel web | PhoneInfoga serve | Interfaz web local para PhoneInfoga |
+| 🧰 Panel web | SpiderFoot Web | Panel web de SpiderFoot con mapa de correlaciones |
 
 Cada herramienta muestra al seleccionarla una **ficha** con su descripción,
 sus limitaciones y un ejemplo del dato que necesita.

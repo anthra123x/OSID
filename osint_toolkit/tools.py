@@ -21,6 +21,7 @@ CATEGORIES = [
     "🌐  Dominios y subdominios",
     "🕸️  Sitios y tecnología",
     "🖼️  Metadatos (fotos y archivos)",
+    "🔍  Frameworks OSINT",
     "🧰  Panel web",
 ]
 
@@ -198,12 +199,59 @@ TOOLS = [
         runner="metagoofil -d {input} -t pdf,doc,xls,docx,pptx -l 5 -n 10 -o {out}",
         takes_input=True,
     ),
+    # ── Frameworks OSINT ─────────────────────────────────
+    dict(
+        name="spiderfoot",
+        title="SpiderFoot",
+        binary="spiderfoot",
+        category=CATEGORIES[6],
+        desc="Motor OSINT automatizado: corre cientos de módulos sobre un "
+             "objetivo (dominio, email o IP), cruza los datos entre sí y "
+             "reporta todo correlacionado en CSV.",
+        limits="Análisis pasivo recomendado: puede tardar varios minutos. "
+               "Las correlaciones completas se ven mejor en la UI web.",
+        example="ejemplo.com",
+        input_label="Objetivo (dominio, email o IP)",
+        runner="spiderfoot -s {input} -u passive -o csv",
+        takes_input=True,
+    ),
+    dict(
+        name="sn0int",
+        title="Sn0int",
+        binary="sn0int",
+        category=CATEGORIES[6],
+        desc="Framework OSINT semi-automatizado con interfaz propia (TUI): "
+             "módulos para IPs, dominios, personas y fotos, con identidades "
+             "y anonimato por VPN.",
+        limits="Abre su propia interfaz interactiva: no se puede encadenar. "
+               "El primer uso pide instalar/actualizar módulos del registro.",
+        example="",
+        input_label="",
+        runner="sn0int",
+        takes_input=False,
+        interactive=True,
+    ),
+    dict(
+        name="ghunt",
+        title="GHunt",
+        binary="ghunt",
+        category=CATEGORIES[6],
+        desc="OSINT de cuentas de Google a partir de un email: nombre, avatar, "
+             "edad estimada, actividad y perfil público.",
+        limits="Las funciones de geolocalización requieren un token de "
+               "Firebase (ghunt login la primera vez). Google puede limitar "
+               "consultas.",
+        example="alguien@gmail.com",
+        input_label="Email de la cuenta Google",
+        runner="ghunt email {input}",
+        takes_input=True,
+    ),
     # ── Panel web ────────────────────────────────────────
     dict(
         name="webui",
         title="PhoneInfoga Web",
         binary="phoneinfoga",
-        category=CATEGORIES[6],
+        category=CATEGORIES[7],
         desc="Levanta un panel web local (navegador) para usar PhoneInfoga "
              "con interfaz gráfica. Se detiene con Ctrl+C.",
         limits="No genera resultados nuevos: es la misma herramienta en web.",
@@ -211,5 +259,21 @@ TOOLS = [
         input_label="",
         runner="phoneinfoga serve",
         takes_input=False,
+        interactive=True,
+    ),
+    dict(
+        name="sfweb",
+        title="SpiderFoot Web",
+        binary="spiderfoot",
+        category=CATEGORIES[7],
+        desc="Levanta la interfaz web de SpiderFoot (http://127.0.0.1:5001) "
+             "para lanzar scans y ver el mapa de correlaciones en el navegador.",
+        limits="Primer uso: la UI pide crear una contraseña y descargar "
+               "plugins de geolocalización opcionales.",
+        example="",
+        input_label="",
+        runner="spiderfoot -l 127.0.0.1:5001",
+        takes_input=False,
+        interactive=True,
     ),
 ]

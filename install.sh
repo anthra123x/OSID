@@ -85,6 +85,48 @@ else
     skip "metagoofil"
 fi
 
+# ── ghunt (git, no está en PyPI con wheels para 3.14) ──────────
+if ! need ghunt; then
+    info "Instalando ghunt..."
+    pipx install "git+https://github.com/mxrch/GHunt.git" >/dev/null
+    ok "ghunt"
+else
+    skip "ghunt"
+fi
+
+# ── spiderfoot (git + venv; lxml viene del sistema) ────────────
+if ! need spiderfoot; then
+    info "Instalando spiderfoot..."
+    if [ "$distro" = "arch" ]; then sudo pacman -S --noconfirm python-lxml >/dev/null 2>&1 || true
+    elif [ "$distro" = "debian" ]; then sudo apt install -y python3-lxml >/dev/null 2>&1 || true; fi
+    git clone -q --depth 1 https://github.com/smicallef/spiderfoot "$SHARE/spiderfoot"
+    python3 -m venv --system-site-packages "$SHARE/spiderfoot/venv"
+    grep -vi '^lxml' "$SHARE/spiderfoot/requirements.txt" > /tmp/sfreq.txt
+    "$SHARE/spiderfoot/venv/bin/pip" install -q -r /tmp/sfreq.txt
+    rm -f /tmp/sfreq.txt
+    cat > "$BIN/spiderfoot" <<EOF
+#!/bin/bash
+exec "\$HOME/.local/share/spiderfoot/venv/bin/python" "\$HOME/.local/share/spiderfoot/sf.py" "\$@"
+EOF
+    chmod +x "$BIN/spiderfoot"
+    ok "spiderfoot"
+else
+    skip "spiderfoot"
+fi
+
+# ── sn0int (paquete del sistema en Arch) ───────────────────────
+if ! need sn0int; then
+    info "Instalando sn0int..."
+    if [ "$distro" = "arch" ]; then
+        sudo pacman -S --noconfirm sn0int >/dev/null || paru -S --noconfirm --needed sn0int >/dev/null
+    elif [ "$distro" = "debian" ]; then
+        warn "sn0int no está en los repos oficiales: instalalo con cargo (cargo install sn0int)."
+    fi
+    ok "sn0int"
+else
+    skip "sn0int"
+fi
+
 # ── binarios Go (GitHub releases) ─────────────────────────────
 go_get() {
     local repo="$1" bin="$2" pattern="$3" sub="$4"
@@ -156,7 +198,7 @@ echo "  Reportes e historial se guardan en ~/osint-toolkit/resultados (local de 
 echo
 echo -e "${CYAN}  Estado:${NC}"
 missing=0
-for t in osint-menu phoneinfoga sherlock maigret theHarvester holehe h8mail subfinder httpx dnsrecon whatweb exiftool metagoofil; do
+for t in osint-menu phoneinfoga sherlock maigret theHarvester holehe h8mail subfinder httpx dnsrecon whatweb exiftool metagoofil spiderfoot sn0int ghunt; do
     if need "$t"; then echo -e "    ${GREEN}✔${NC} $t"; else echo -e "    ${RED}✘${NC} $t"; missing=1; fi
 done
 [ "$missing" = "1" ] && echo -e "${YELLOW}  Revisá los errores o instalá los faltantes a mano.${NC}"
