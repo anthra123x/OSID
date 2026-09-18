@@ -110,4 +110,4 @@ indebido.
 
 ## Licencia
 
-MIT
+MIT — © 2026 anthra123x. Ver archivo [LICENSE](LICENSE).
