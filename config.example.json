@@ -1,0 +1,8 @@
+{
+  "resultados": "~/osint-toolkit/resultados",
+  "env": {
+    "HIBP_API_KEY": "",
+    "GITHUB_API_KEY": "",
+    "HUNTER_API_KEY": ""
+  }
+}

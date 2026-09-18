@@ -1,9 +1,9 @@
 # OSID — Toolkit OSINT interactivo para terminal
 
 Lanzador interactivo de herramientas OSINT para Linux. Un solo menú en la
-terminal reúne varias herramientas de inteligencia de fuentes abiertas
-(Open Source Intelligence), con la descripción de cada una, sus limitaciones,
-ejemplos de uso y manejo de errores.
+terminal reúne herramientas de inteligencia de fuentes abiertas (Open Source
+Intelligence), con la descripción de cada una, sus limitaciones, ejemplos de
+uso y reportes guardados automáticamente.
 
 ![interfaz](https://img.shields.io/badge/menu-interactivo-cyan) ![python](https://img.shields.io/badge/Python-3.10+-blue) ![license](https://img.shields.io/badge/license-MIT-green)
 
@@ -13,64 +13,100 @@ ejemplos de uso y manejo de errores.
 |-----------|-------------|----------|
 | 📞 Números de teléfono | PhoneInfoga | País de origen, operador, formato válido y reputación en bases públicas |
 | 👤 Usuarios | Sherlock | Busca un nombre de usuario en +350 redes sociales |
+| 👤 Usuarios | Maigret | Busca usuario en miles de fuentes y arma un perfil (complementa a Sherlock) |
 | ✉️ Emails | Holehe | Detecta en qué plataformas está registrada una dirección de email |
+| ✉️ Emails | h8mail | Cruza un email con bases de brechas y fuentes públicas |
 | 🌐 Dominios | theHarvester | Emails, hosts y subdominios asociados a un dominio |
 | 🌐 Dominios | Subfinder | Enumeración pasiva de subdominios |
-| 🖼️ Fotos | ExifTool | Metadatos EXIF de imágenes (cámara, fecha, GPS si están presentes) |
+| 🌐 Dominios | Httpx | Prueba qué hosts responden: estado, título, tecnologías |
+| 🌐 Dominios | DNSRecon | Registros DNS: MX, TXT, NS, SOA y transferencia de zona |
+| 🕸️ Sitios | WhatWeb | Detecta CMS, servidor, framework y plugins de un sitio |
+| 🖼️ Metadatos | ExifTool | Metadatos EXIF de imágenes (cámara, fecha, GPS si están presentes) |
+| 🖼️ Metadatos | Metagoofil | Descarga documentos públicos de un dominio y extrae sus metadatos |
 | 🧰 Panel web | PhoneInfoga serve | Interfaz web local para PhoneInfoga |
 
 Cada herramienta muestra al seleccionarla una **ficha** con su descripción,
 sus limitaciones y un ejemplo del dato que necesita.
 
-## Instalación
-
-### 1. Herramientas OSINT
-
-Instaladas en `~/.local/bin` (pipx) o por el gestor de paquetes:
+## Instalación automática
 
 ```bash
-# Números de teléfono
-pipx install phoneinfoga          # o binario desde GitHub releases
-
-# Usuarios
-pipx install sherlock-project
-
-# Emails
-pipx install holehe
-
-# Dominios
-pipx install theHarvester         # desde git
-pipx install "git+https://github.com/laramies/theHarvester.git"
-# subfinder (binario desde GitHub releases de projectdiscovery)
-
-# Metadatos
-sudo pacman -S perl-image-exiftool   # Arch/CachyOS (exiftool)
-sudo apt install libimage-exiftool-perl  # Debian/Ubuntu
-```
-
-### 2. La app
-
-```bash
-pipx install --editable ~/osint-toolkit
+git clone git@github.com:anthra123x/OSID.git ~/osint-toolkit
+cd ~/osint-toolkit
+bash install.sh
 osint-menu
 ```
+
+`install.sh` instala todas las herramientas (pipx, binarios de GitHub y
+paquetes del sistema según tu distro) y la propia app. Es idempotente: no
+reinstala lo que ya está.
 
 ## Uso
 
+**Modo menú:**
 ```bash
 osint-menu
 ```
+- Elegí una opción con su número, o `v` para ver el historial, `h` para el
+  glosario, `0` para salir. `Ctrl+C` interrumpe cualquier ejecución.
 
-- Elegí una opción del menú (tecleando el número) o `h` para el glosario.
-- La app te pide el dato (número, usuario, email, dominio o ruta de imagen),
-  muestra la ficha de la herramienta y la ejecuta en vivo.
-- `0` para salir. `Ctrl+C` interrumpe cualquier ejecución.
+**Modo directo** (para scripts o atajos):
+```bash
+osint-menu phoneinfoga +573234733415
+osint-menu sherlock juanperez
+osint-menu exiftool /ruta/foto.jpg
+```
+
+**Modo batch** (varios datos a la vez):
+```bash
+osint-menu holehe "a@gmail.com, b@gmail.com, c@gmail.com"
+osint-menu subfinder "@lista-de-dominios.txt"   # un dominio por línea
+```
+
+## Reportes e historial (local por equipo)
+
+Cada búsqueda se guarda automáticamente en el equipo donde se ejecuta (nada
+se sube a internet):
+
+```
+~/osint-toolkit/resultados/
+├── historial.tsv            # registro de todas las búsquedas
+└── AAAA-MM-DD/
+    └── <herramienta>-<hora>/
+        ├── comando.txt      # comando ejecutado
+        ├── entrada.txt      # dato buscado
+        └── salida.txt       # salida completa de la herramienta
+```
+
+La opción `v` del menú muestra las últimas búsquedas de ese equipo.
+
+## Configuración
+
+La config se lee de `~/.config/osint/config.json` (por equipo). Copiá
+`config.example.json` y completá tus API keys:
+
+```json
+{
+  "resultados": "~/osint-toolkit/resultados",
+  "env": {
+    "HIBP_API_KEY": "...",     // ayuda a h8mail (brechas)
+    "GITHUB_API_KEY": "...",   // h8mail y otras
+    "HUNTER_API_KEY": "..."    // búsqueda de emails
+  }
+}
+```
+
+Las variables de `env` se inyectan a cada herramienta al ejecutarla.
+`resultados` cambia la carpeta donde se guardan los reportes.
+También se pueden pasar por entorno: `OSINT_CONFIG` y `OSINT_RESULTS`.
 
 ## Agregar herramientas propias
 
-Edita el registro en `osint_toolkit/tools.py` y agregá un dict con la información
-de la herramienta. El menú la muestra automáticamente. No hace falta tocar la
-lógica del launcher.
+Editá el registro en `osint_toolkit/tools.py` y agregá un dict. El menú la
+muestra automáticamente. Soporta los marcadores:
+
+- `{input}` — el dato ingresado
+- `{out}` — directorio del reporte actual (para tools que guardan archivos)
 
 ```python
 dict(
@@ -91,12 +127,14 @@ dict(
 
 ```
 osint-toolkit/
-├── pyproject.toml               # empaquetado + entry point (osint-menu)
+├── install.sh                  # instalador automático
+├── pyproject.toml              # empaquetado + entry point (osint-menu)
+├── config.example.json         # plantilla de API keys
 └── osint_toolkit/
     ├── __init__.py
-    ├── cli.py                   # launcher, menú y ejecución
-    ├── tools.py                 # registro de herramientas (data-driven)
-    └── ui.py                    # colores, banner y helpers de interfaz
+    ├── cli.py                  # menú, ejecución, reportes y modos
+    ├── tools.py                # registro de herramientas (data-driven)
+    └── ui.py                   # colores, banner y helpers de interfaz
 ```
 
 ## Aviso legal

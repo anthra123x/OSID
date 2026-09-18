@@ -1,7 +1,7 @@
 """Registro central de herramientas OSINT.
 
 Cada herramienta es un dict con:
-  name        : clave corta usada en el menú
+  name        : clave corta usada en el menú y modo directo
   title       : nombre visible
   binary      : ejecutable en PATH
   category    : categoría del menú
@@ -9,7 +9,8 @@ Cada herramienta es un dict con:
   limits      : qué NO hace / advertencias
   example     : valor de ejemplo para el input
   input_label : qué se le pide al usuario
-  runner      : argumentos para subprocess (shlex) con espacio {input}
+  runner      : argumentos para subprocess con espacios {input} y {out}
+                ({out} se reemplaza por el directorio del reporte actual)
   takes_input : False para herramientas sin input (ej: servidor web)
 """
 
@@ -17,8 +18,9 @@ CATEGORIES = [
     "📞  Números de teléfono",
     "👤  Usuarios y redes sociales",
     "✉️  Emails",
-    "🌐  Dominios",
-    "🖼️  Fotos y metadatos",
+    "🌐  Dominios y subdominios",
+    "🕸️  Sitios y tecnología",
+    "🖼️  Metadatos (fotos y archivos)",
     "🧰  Panel web",
 ]
 
@@ -46,11 +48,25 @@ TOOLS = [
         category=CATEGORIES[1],
         desc="Busca un nombre de usuario en más de 350 plataformas y redes "
              "sociales, indicando en cuáles existe una cuenta.",
-        limits="La cuenta puede ser otra persona con el mismo nombre. "
+        limits="La cuenta puede ser de otra persona con el mismo nombre. "
                "Es lento porque revisa cientos de sitios.",
         example="juanperez",
         input_label="Nombre de usuario",
         runner="sherlock {input}",
+        takes_input=True,
+    ),
+    dict(
+        name="maigret",
+        title="Maigret",
+        binary="maigret",
+        category=CATEGORIES[1],
+        desc="Igual que Sherlock pero con otra cobertura de sitios: busca la "
+             "presencia de un usuario en miles de fuentes y arma un perfil.",
+        limits="Al igual que Sherlock, puede tardar y dar falsos positivos. "
+               "Complementa a Sherlock, no lo reemplaza.",
+        example="juanperez",
+        input_label="Nombre de usuario",
+        runner="maigret {input}",
         takes_input=True,
     ),
     # ── Emails ───────────────────────────────────────────
@@ -61,14 +77,28 @@ TOOLS = [
         category=CATEGORIES[2],
         desc="Comprueba si una dirección de email está registrada en "
              "plataformas (Google, Spotify, LinkedIn, etc.) sin enviar emails.",
-        limits="Solo indica registros visibles desde públicos. Algunos sitios "
-               "bloquean este tipo de consultas.",
+        limits="Solo indica registros visibles desde fuentes públicas. "
+               "Algunos sitios bloquean este tipo de consultas.",
         example="alguien@gmail.com",
         input_label="Dirección de email",
         runner="holehe {input}",
         takes_input=True,
     ),
-    # ── Dominios ─────────────────────────────────────────
+    dict(
+        name="h8mail",
+        title="h8mail",
+        binary="h8mail",
+        category=CATEGORIES[2],
+        desc="Cruza una dirección de email con bases de brechas y fuentes "
+             "públicas (GitHub, pastebins) buscando filtraciones.",
+        limits="Sin API keys (config del proyecto) los resultados son "
+               "limitados. No toda filtración está indexada.",
+        example="alguien@gmail.com",
+        input_label="Dirección de email",
+        runner="h8mail -t {input}",
+        takes_input=True,
+    ),
+    # ── Dominios y subdominios ───────────────────────────
     dict(
         name="theharvester",
         title="theHarvester",
@@ -96,14 +126,57 @@ TOOLS = [
         runner="subfinder -d {input} -silent",
         takes_input=True,
     ),
-    # ── Fotos y metadatos ────────────────────────────────
+    dict(
+        name="httpx",
+        title="Httpx",
+        binary="httpx",
+        category=CATEGORIES[3],
+        desc="Prueba cuáles dominios o subdominios responden realmente y "
+             "reporta código de estado, título, tecnologías y redirección.",
+        limits="Solo ve lo que un navegador puede ver. Requiere la URL "
+               "completa (con http:// o https://).",
+        example="https://ejemplo.com",
+        input_label="URL completa (con http/https)",
+        runner="httpx -u {input} -sc -title -tech-detect -location",
+        takes_input=True,
+    ),
+    dict(
+        name="dnsrecon",
+        title="DNSRecon",
+        binary="dnsrecon",
+        category=CATEGORIES[3],
+        desc="Identifica los registros DNS de un dominio: MX, TXT, NS, SOA y "
+             "prueba transferencias de zona.",
+        limits="Una transferencia de zona casi nunca está abierta en sitios "
+               "bien configurados.",
+        example="ejemplo.com",
+        input_label="Dominio (sin http://)",
+        runner="dnsrecon -d {input} -t std",
+        takes_input=True,
+    ),
+    # ── Sitios y tecnología ──────────────────────────────
+    dict(
+        name="whatweb",
+        title="WhatWeb",
+        binary="whatweb",
+        category=CATEGORIES[4],
+        desc="Detecta la tecnología de un sitio: CMS, servidor web, framework, "
+             "lenguaje y plugins que usa.",
+        limits="La detección puede fallar en sitios con WAF o contenido "
+               "dinámico pesado.",
+        example="https://ejemplo.com",
+        input_label="URL completa (con http/https)",
+        runner="whatweb -a 3 {input}",
+        takes_input=True,
+    ),
+    # ── Metadatos (fotos y archivos) ─────────────────────
     dict(
         name="exiftool",
         title="ExifTool",
         binary="exiftool",
-        category=CATEGORIES[4],
+        category=CATEGORIES[5],
         desc="Lee los metadatos EXIF de una foto: cámara, fecha, software y, "
-             "si la imagen los guarda, coordenadas GPS del lugar donde se tomó.",
+             "si están presentes, coordenadas GPS del lugar donde se tomó.",
         limits="Muchas apps y redes borran los metadatos al compartir. "
                "Solo funciona si la foto original los conserva.",
         example="/ruta/a/foto.jpg",
@@ -111,12 +184,26 @@ TOOLS = [
         runner="exiftool {input}",
         takes_input=True,
     ),
+    dict(
+        name="metagoofil",
+        title="Metagoofil",
+        binary="metagoofil",
+        category=CATEGORIES[5],
+        desc="Descarga documentos públicos (PDF, DOC, XLS...) de un dominio y "
+             "les extrae los metadatos ocultos (autores, software, rutas).",
+        limits="Descarga un límite de archivos y depende de los motores de "
+               "búsqueda. Los archivos quedan en el reporte.",
+        example="ejemplo.com",
+        input_label="Dominio (sin http://)",
+        runner="metagoofil -d {input} -t pdf,doc,xls,docx,pptx -l 5 -n 10 -o {out}",
+        takes_input=True,
+    ),
     # ── Panel web ────────────────────────────────────────
     dict(
         name="webui",
         title="PhoneInfoga Web",
         binary="phoneinfoga",
-        category=CATEGORIES[5],
+        category=CATEGORIES[6],
         desc="Levanta un panel web local (navegador) para usar PhoneInfoga "
              "con interfaz gráfica. Se detiene con Ctrl+C.",
         limits="No genera resultados nuevos: es la misma herramienta en web.",

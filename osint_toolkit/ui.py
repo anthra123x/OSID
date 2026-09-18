@@ -93,6 +93,7 @@ def color_category(cat: str) -> str:
         "👤": "user",
         "✉️": "email",
         "🌐": "domain",
+        "🕸️": "web",
         "🖼️": "photo",
         "🧰": "web",
     }.get(cid, "cyan")
