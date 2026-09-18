@@ -66,6 +66,8 @@ def tool_card(t: dict) -> None:
         print(c("cyan", "  ▸ EJEMPLO:") + f'  {c("bold", t["example"])}')
     print(c("cyan", "  ▸ COMANDO:"),
           f'  {c("dim", t["runner"].replace("{input}", t["example"]).replace("{out}", "…"))}')
+    if t.get("url"):
+        print(c("bold", f'  ▸ ACCESO:  {c("ok", t["url"])}'))
     print()
 
 

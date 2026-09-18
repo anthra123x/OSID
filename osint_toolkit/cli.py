@@ -11,6 +11,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -156,7 +157,23 @@ def run_tool(t: dict, cfg: dict, value: str | None = None) -> None:
             args_it = shlex.split(t["runner"].replace("{input}", each))
             print(c("dim", f"\n  $ {' '.join(args_it)}"))
             print(c("cyan", "─" * 64))
+            url = t.get("url")
+            if url:
+                print(c("bold", "  🌐 Panel disponible en:"))
+                print(c("ok", f"    {url}"))
+                print(c("dim", "  (Ctrl+C detiene el servidor)"))
+                print(c("cyan", "─" * 64))
+                if shutil.which("xdg-open"):
+                    threading.Timer(
+                        2.0,
+                        lambda: subprocess.Popen(
+                            ["xdg-open", url],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                        ),
+                    ).start()
             try:
+                sys.stdout.flush()
                 code = subprocess.run(args_it, env=child_env(cfg)).returncode
             except KeyboardInterrupt:
                 code = 130
