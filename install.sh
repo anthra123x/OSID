@@ -69,6 +69,12 @@ pipx_install h8mail
 pipx_install theHarvester "git+https://github.com/laramies/theHarvester.git"
 pipx_install dnsrecon
 
+# dnsrecon se rompe en Python >= 3.13 (urllib.FancyURLopener eliminado).
+# El parche del repo es idempotente y se aplica si hace falta.
+if need dnsrecon; then
+    python3 "$APP_DIR/scripts/patch-dnsrecon-py314.py" >/dev/null || warn "parche dnsrecon no aplicado"
+fi
+
 # ── metagoofil (git + venv, no es paquete pip) ────────────────
 if ! need metagoofil; then
     info "Instalando metagoofil..."
@@ -77,6 +83,7 @@ if ! need metagoofil; then
     "$SHARE/metagoofil/venv/bin/pip" install -q -r "$SHARE/metagoofil/requirements.txt"
     cat > "$BIN/metagoofil" <<EOF
 #!/bin/bash
+cd "\$HOME/.local/share/metagoofil" || exit 1
 exec "\$HOME/.local/share/metagoofil/venv/bin/python" "\$HOME/.local/share/metagoofil/metagoofil.py" "\$@"
 EOF
     chmod +x "$BIN/metagoofil"

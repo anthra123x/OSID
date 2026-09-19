@@ -11,6 +11,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -99,9 +100,11 @@ def child_env(cfg: dict) -> dict:
     return env
 
 
-def run_process(args: list[str], env: dict, log_path: Path) -> int:
-    """Ejecuta con salida en vivo (tee) y guarda todo en el reporte."""
-    with open(log_path, "a", encoding="utf-8") as log:
+def run_process(args: list[str], env: dict, cwd: Path, log_path: Path | None) -> int:
+    """Ejecuta con salida en vivo (tee). Guarda salida solo si log_path existe
+    y aísla la corrida en cwd propio (portable: sin cachés compartidas)."""
+    log = open(log_path, "a", encoding="utf-8") if log_path else None
+    try:
         proc = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
@@ -109,19 +112,24 @@ def run_process(args: list[str], env: dict, log_path: Path) -> int:
             text=True,
             bufsize=1,
             env=env,
+            cwd=str(cwd) if cwd else None,
         )
         try:
             assert proc.stdout is not None
             for line in proc.stdout:
                 sys.stdout.write(line)
                 sys.stdout.flush()
-                log.write(line)
+                if log:
+                    log.write(line)
             proc.wait()
         except KeyboardInterrupt:
             proc.terminate()
             proc.wait()
             print(c("warn", "\n  Ejecución interrumpida."))
             return 130
+    finally:
+        if log:
+            log.close()
     return proc.returncode
 
 
@@ -183,26 +191,37 @@ def run_tool(t: dict, cfg: dict, value: str | None = None) -> None:
             pause()
             return
 
-        stamp = datetime.now().strftime("%H%M%S-%f")[:-3]
-        date_dir = datetime.now().strftime("%Y-%m-%d")
-        run_dir = RESULTS_ROOT / date_dir / f"{t['name']}-{stamp}"
-        run_dir.mkdir(parents=True, exist_ok=True)
-        log_path = run_dir / "salida.txt"
+        portable = cfg.get("portable", True)
+        if portable:
+            run_dir = Path(tempfile.mkdtemp(prefix="osint-portable-"))
+            log_path = None
+        else:
+            stamp = datetime.now().strftime("%H%M%S-%f")[:-3]
+            date_dir = datetime.now().strftime("%Y-%m-%d")
+            run_dir = RESULTS_ROOT / date_dir / f"{t['name']}-{stamp}"
+            run_dir.mkdir(parents=True, exist_ok=True)
+            log_path = run_dir / "salida.txt"
 
+        print(c("bold", f"  🎯 Buscando: {c('cyan', each)}")
+              if each else c("bold", "  🎯 Ejecutando..."))
         args_t = t["runner"].replace("{input}", each).replace(
             "{out}", str(run_dir))
         args = shlex.split(args_t)
-        (run_dir / "comando.txt").write_text(" ".join(args), encoding="utf-8")
-        if each:
+        if log_path and each:
+            (run_dir / "comando.txt").write_text(" ".join(args), encoding="utf-8")
             (run_dir / "entrada.txt").write_text(each, encoding="utf-8")
 
         print(c("dim", f"\n  $ {' '.join(args)}"))
         print(c("cyan", "─" * 64))
-        code = run_process(args, child_env(cfg), log_path)
+        code = run_process(args, child_env(cfg), run_dir, log_path)
         print(c("cyan", "─" * 64))
         status = "ok" if code == 0 else f"salida {code}"
-        record_history(t, each, status, str(log_path))
-        print(c("ok", f"  📄 Reporte guardado: {run_dir}"))
+        if portable:
+            shutil.rmtree(run_dir, ignore_errors=True)
+            record_history(t, each, status, "portable (sin archivos)")
+        else:
+            record_history(t, each, status, str(log_path))
+            print(c("ok", f"  📄 Reporte guardado: {run_dir}"))
 
     pause()
 
@@ -321,6 +340,8 @@ def main() -> None:
 
     installs = sum(1 for t in tools.TOOLS if find_binary(t["binary"]))
     total = len(tools.TOOLS)
+    if env.get("portable", True):
+        print(c("dim", "  🔒 Modo portable: cada búsqueda corre aislada, sin datos guardados entre corridas."))
     if installs < total:
         print(c("warn", f"  ⚠ Herramientas disponibles: {installs}/{total}"))
         print(c("warn", "    Faltantes se indican al elegirlas (o usá install.sh).\n"))

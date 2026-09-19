@@ -45,6 +45,11 @@ osint-menu
 paquetes del sistema según tu distro) y la propia app. Es idempotente: no
 reinstala lo que ya está.
 
+En Python ≥ 3.13, `dnsrecon` se rompe porque `urllib.request.FancyURLopener`
+fue eliminado. El instalador aplica automáticamente
+[`scripts/patch-dnsrecon-py314.py`](scripts/patch-dnsrecon-py314.py); también
+puedes ejecutarlo a mano, es idempotente.
+
 ## Uso
 
 **Modo menú:**

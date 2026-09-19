@@ -1,4 +1,5 @@
 {
+  "portable": true,
   "resultados": "~/osint-toolkit/resultados",
   "env": {
     "HIBP_API_KEY": "",
